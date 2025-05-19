@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				setUser(JSON.parse(userData));
 			}
 		} else {
-			console.log("No token found");
+			// console.log("No token found");
 			setUser(null);
 		}
 	}, []);
@@ -96,7 +96,7 @@ export function withAuth(
 			const token = getToken();
 			const isAuthenticated = !!token;
 			if (!isAuthenticated) {
-				console.log(isAuthenticated, "not authenticated");
+				// console.log(isAuthenticated, "not authenticated");
 
 				router.replace("/login");
 			}

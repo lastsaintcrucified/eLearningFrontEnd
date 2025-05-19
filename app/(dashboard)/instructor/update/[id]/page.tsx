@@ -82,7 +82,11 @@ export default function UpdateCoursePage({
 		setIsLoading(true);
 
 		try {
-			await updateCourse(id, values.title, values.description);
+			await updateCourse(
+				id,
+				values.title ? values.title : course?.title,
+				values.description ? values.description : course?.description
+			);
 			setIsLoading(false);
 			toast({
 				title: "Update successful",

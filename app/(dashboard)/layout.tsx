@@ -41,7 +41,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 	const { logout } = useAuth();
 	const router = useRouter();
 	const { toast } = useToast();
-	console.log("user", user ? user : null);
+	// console.log("user", user ? user : null);
 	const isInstructor = user?.role === "instructor";
 	const handleLogout = async () => {
 		try {

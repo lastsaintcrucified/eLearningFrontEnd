@@ -20,8 +20,8 @@ export interface CourseCreate {
 
 export interface Enrollment {
 	id: string;
-	courseId: string;
-	studentId: string;
+	course: Course;
+	student: User;
 }
 
 export interface Module {
@@ -101,13 +101,12 @@ export async function deleteCourse(id: string): Promise<boolean> {
 // Enrollment for student role
 export async function enrollStudent(
 	courseId: string,
-	studentId: string,
-	role: Role
+	role: Role | undefined
 ): Promise<Enrollment | undefined> {
 	if (role !== "student") return undefined;
 	const res = await axios.post(
 		`${API_URL}enrollments`,
-		{ courseId, studentId },
+		{ courseId },
 		{
 			headers: { "Content-Type": "application/json" },
 		}
@@ -119,11 +118,10 @@ export async function enrollStudent(
 }
 
 export async function getEnrollmentsByStudent(
-	studentId: string,
-	role: Role
+	role: Role | undefined
 ): Promise<Enrollment[]> {
 	if (role !== "student") return [];
-	const res = await axios.get(`${API_URL}enrollments?studentId=${studentId}`, {
+	const res = await axios.get(`${API_URL}enrollments/me`, {
 		headers: { "Content-Type": "application/json" },
 	});
 	if (res.status !== 200) {
@@ -141,7 +139,7 @@ export async function getModulesByCourseId(
 	const res = await axios.get(`${API_URL}courses/${courseId}/modules`, {
 		headers: { "Content-Type": "application/json" },
 	});
-	console.log(res, "dfgf");
+	// console.log(res, "dfgf");
 	if (res.status !== 200) {
 		throw new Error("Failed to fetch modules");
 	}

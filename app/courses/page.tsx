@@ -31,7 +31,13 @@ import { useAuth, withAuth } from "@/context/authContext";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import Image from "next/image";
-import { Course, getCourses } from "@/lib/data/data";
+import {
+	Course,
+	Enrollment,
+	enrollStudent,
+	getCourses,
+	getEnrollmentsByStudent,
+} from "@/lib/data/data";
 
 // Mock data for courses
 // const allCourses = [
@@ -123,7 +129,10 @@ function CoursesPage() {
 	const { toast } = useToast();
 	const [courses, setCourses] = useState<Course[]>([]);
 	const [loading, setLoading] = useState(false);
-
+	const [rollLoading, setRollLoading] = useState(false);
+	const [enrolledCourses, setEnrolledCourses] = useState<
+		Enrollment[] | undefined
+	>([]);
 	// console.log("courses", courses);
 
 	useEffect(() => {
@@ -137,6 +146,14 @@ function CoursesPage() {
 				console.error("Error fetching courses:", error);
 			}
 		}
+		async function fetchEnrolledCourse() {
+			setLoading(true);
+			const data = await getEnrollmentsByStudent(user?.role);
+			setEnrolledCourses(data);
+			setLoading(false);
+		}
+
+		fetchEnrolledCourse();
 		fetchCourses();
 	}, []);
 
@@ -159,6 +176,27 @@ function CoursesPage() {
 			toast({
 				title: "Signup failed",
 				description: error.message || "Failed to create your account.",
+				variant: "destructive",
+			});
+		}
+	};
+
+	const handleEnroll = async (courseId: string) => {
+		try {
+			setRollLoading(true);
+
+			// Call your API to enroll the user in the course
+			await enrollStudent(courseId, user?.role);
+			toast({
+				title: "Enrolled in Course",
+				description: "Successfully enrolled in the course",
+				variant: "default",
+			});
+			setRollLoading(false);
+		} catch (error: any) {
+			toast({
+				title: "Error enrolling in course",
+				description: error.message || "Failed to enroll in the course.",
 				variant: "destructive",
 			});
 		}
@@ -335,14 +373,40 @@ function CoursesPage() {
 											</div>
 										</CardContent>
 										<CardFooter className='p-4 pt-0'>
-											<Button
-												asChild
-												className='w-full'
-											>
-												<Link href={`/dashboard/course/${course.id}`}>
-													View Course
-												</Link>
-											</Button>
+											{user?.role === "student" ? (
+												enrolledCourses?.some(
+													(enrollment) => enrollment.course.id === course.id
+												) ? (
+													<Button
+														asChild
+														className='w-full'
+														disabled
+													>
+														<span>Enrolled</span>
+													</Button>
+												) : (
+													<Button
+														asChild
+														className='w-full'
+														onClick={() => handleEnroll(course.id)}
+													>
+														{rollLoading ? (
+															<Loader className='h-4 w-4 animate-spin' />
+														) : (
+															<span>Enroll Now</span>
+														)}
+													</Button>
+												)
+											) : (
+												<Button
+													asChild
+													className='w-full'
+												>
+													<Link href={`/dashboard/course/${course.id}`}>
+														View Course
+													</Link>
+												</Button>
+											)}
 										</CardFooter>
 									</Card>
 								))}
