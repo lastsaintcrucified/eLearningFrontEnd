@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { getToken, login, logout } from "@/lib/auth";
+import { Role } from "@/lib/data/data";
 import { useRouter } from "next/navigation";
 import {
 	createContext,
@@ -14,35 +15,34 @@ export interface User {
 	id: number;
 	name: string;
 	email: string;
-	role?: string;
+	role?: Role;
 }
 
 interface AuthContextType {
 	user: User | null;
 	login: (email: string, password: string) => Promise<void>;
 	logout: () => Promise<void>;
-	isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [user, setUser] = useState<User | null>(null);
-	const [isAuthenticated, setIsAuthenticated] = useState(false);
 	const router = useRouter();
 
 	useEffect(() => {
+		// console.log("AuthProvider mounted");
 		const token = getToken();
 		if (token) {
 			// Optionally decode token to get user info
+
 			const userData = localStorage.getItem("user_data");
 			if (userData) {
 				setUser(JSON.parse(userData));
 			}
-			setIsAuthenticated(true);
 		} else {
+			console.log("No token found");
 			setUser(null);
-			setIsAuthenticated(false);
 		}
 	}, []);
 
@@ -54,7 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			const userData: User = { ...user };
 			localStorage.setItem("user_data", JSON.stringify(userData));
 			setUser(userData);
-			setIsAuthenticated(true);
 		}
 	};
 
@@ -62,7 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		await logout();
 		localStorage.removeItem("user_data");
 		setUser(null);
-		setIsAuthenticated(false);
 		router.push("/login");
 	};
 
@@ -72,7 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				user,
 				login: handleLogin,
 				logout: handleLogout,
-				isAuthenticated,
 			}}
 		>
 			{children}
@@ -93,18 +90,18 @@ export function withAuth(
 	WrappedComponent: React.ComponentType<React.PropsWithChildren<any>>
 ) {
 	return function AuthenticatedComponent(props: React.PropsWithChildren<any>) {
-		const { isAuthenticated } = useAuth();
 		const router = useRouter();
 
 		useEffect(() => {
+			const token = getToken();
+			const isAuthenticated = !!token;
 			if (!isAuthenticated) {
+				console.log(isAuthenticated, "not authenticated");
+
 				router.replace("/login");
 			}
-		}, [isAuthenticated, router]);
+		}, [, router]);
 
-		if (!isAuthenticated) {
-			return null;
-		}
 		return <WrappedComponent {...props} />;
 	};
 }

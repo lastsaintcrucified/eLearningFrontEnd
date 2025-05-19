@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { MoreHorizontal, Plus, Search } from "lucide-react";
+import { Loader, MoreHorizontal, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -31,48 +33,97 @@ import {
 } from "@/components/ui/table";
 import { Icons } from "@/components/icons";
 import Image from "next/image";
+import { useDataContext } from "@/context/dataContext";
+import { useAuth } from "@/context/authContext";
+import { Course, deleteCourse, getCourses } from "@/lib/data/data";
+import { useToast } from "@/components/ui/use-toast";
 
 // Mock data for instructor courses
-const instructorCourses = [
-	{
-		id: 1,
-		title: "Advanced JavaScript",
-		status: "published",
-		students: 245,
-		lessons: 24,
-		lastUpdated: "2 weeks ago",
-		image: "/placeholder.svg?height=100&width=250",
-		revenue: "$4,320",
-		rating: 4.8,
-	},
-	{
-		id: 2,
-		title: "React Hooks Masterclass",
-		status: "published",
-		students: 189,
-		lessons: 18,
-		lastUpdated: "1 month ago",
-		image: "/placeholder.svg?height=100&width=250",
-		revenue: "$3,150",
-		rating: 4.7,
-	},
-	{
-		id: 3,
-		title: "Node.js API Development",
-		status: "draft",
-		students: 0,
-		lessons: 12,
-		lastUpdated: "3 days ago",
-		image: "/placeholder.svg?height=100&width=250",
-		revenue: "$0",
-		rating: 0,
-	},
-];
+// const instructorCourses = [
+// 	{
+// 		id: 1,
+// 		title: "Advanced JavaScript",
+// 		status: "published",
+// 		students: 245,
+// 		lessons: 24,
+// 		lastUpdated: "2 weeks ago",
+// 		image: "/placeholder.svg?height=100&width=250",
+// 		revenue: "$4,320",
+// 		rating: 4.8,
+// 	},
+// 	{
+// 		id: 2,
+// 		title: "React Hooks Masterclass",
+// 		status: "published",
+// 		students: 189,
+// 		lessons: 18,
+// 		lastUpdated: "1 month ago",
+// 		image: "/placeholder.svg?height=100&width=250",
+// 		revenue: "$3,150",
+// 		rating: 4.7,
+// 	},
+// 	{
+// 		id: 3,
+// 		title: "Node.js API Development",
+// 		status: "draft",
+// 		students: 0,
+// 		lessons: 12,
+// 		lastUpdated: "3 days ago",
+// 		image: "/placeholder.svg?height=100&width=250",
+// 		revenue: "$0",
+// 		rating: 0,
+// 	},
+// ];
 
 export default function InstructorCoursesPage() {
 	const [searchQuery, setSearchQuery] = useState("");
+	const { loading } = useDataContext();
+	const { user } = useAuth();
+	const [courses, setCourses] = useState<Course[]>([]);
+	const { toast } = useToast();
+	useEffect(() => {
+		async function fetchCourses() {
+			try {
+				const data = await getCourses();
+				setCourses(data);
+			} catch (error) {
+				console.error("Error fetching courses:", error);
+			}
+		}
+		fetchCourses();
+	}, []);
 
-	const filteredCourses = instructorCourses.filter((course) =>
+	const instructorCourses = courses?.filter(
+		(course) => course.instructor.id === user?.id
+	);
+	if (loading) {
+		return (
+			<div className='flex items-center justify-center h-screen'>
+				<Loader className='h-8 w-8 animate-spin' />
+			</div>
+		);
+	}
+	const handleDelete = async (id: string) => {
+		try {
+			await deleteCourse(id);
+			toast({
+				title: "Deleted Course",
+				description: "Successfully deleted course",
+				variant: "default",
+			});
+			setCourses((prevCourses) =>
+				prevCourses.filter((course) => course.id !== id)
+			);
+		} catch (error: any) {
+			toast({
+				title: "Error deleting course",
+				description: "Failed to delete course",
+				variant: "destructive",
+			});
+		}
+	};
+
+	const filteredCourses = instructorCourses?.filter((course) =>
 		course.title.toLowerCase().includes(searchQuery.toLowerCase())
 	);
 
@@ -130,7 +181,7 @@ export default function InstructorCoursesPage() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{filteredCourses.length === 0 ? (
+							{filteredCourses?.length === 0 ? (
 								<TableRow>
 									<TableCell
 										colSpan={8}
@@ -143,12 +194,12 @@ export default function InstructorCoursesPage() {
 									</TableCell>
 								</TableRow>
 							) : (
-								filteredCourses.map((course) => (
+								filteredCourses?.map((course) => (
 									<TableRow key={course.id}>
 										<TableCell>
 											<div className='flex items-center gap-3'>
 												<Image
-													src={course.image || "/placeholder.svg"}
+													src={"/placeholder.png"}
 													alt={course.title}
 													className='h-10 w-16 rounded object-cover'
 													height={100}
@@ -158,30 +209,22 @@ export default function InstructorCoursesPage() {
 											</div>
 										</TableCell>
 										<TableCell>
-											<Badge
-												variant={
-													course.status === "published"
-														? "outline"
-														: "secondary"
-												}
-											>
-												{course.status}
-											</Badge>
+											<Badge variant='outline'>Published</Badge>
 										</TableCell>
 										<TableCell className='hidden md:table-cell'>
-											{course.students}
+											{"230"}
 										</TableCell>
 										<TableCell className='hidden md:table-cell'>
-											{course.lessons}
+											{"12"}
 										</TableCell>
 										<TableCell className='hidden md:table-cell'>
-											{course.rating > 0 ? course.rating : "-"}
+											{"-"}
 										</TableCell>
 										<TableCell className='hidden md:table-cell'>
-											{course.revenue}
+											{"1,234,00"}
 										</TableCell>
 										<TableCell className='hidden md:table-cell'>
-											{course.lastUpdated}
+											{"yesterday"}
 										</TableCell>
 										<TableCell className='text-right'>
 											<DropdownMenu>
@@ -197,7 +240,7 @@ export default function InstructorCoursesPage() {
 												<DropdownMenuContent align='end'>
 													<DropdownMenuLabel>Actions</DropdownMenuLabel>
 													<DropdownMenuItem asChild>
-														<Link href={`/instructor/course/${course.id}`}>
+														<Link href={`/instructor/update/${course.id}`}>
 															Edit Course
 														</Link>
 													</DropdownMenuItem>
@@ -209,7 +252,10 @@ export default function InstructorCoursesPage() {
 														</Link>
 													</DropdownMenuItem>
 													<DropdownMenuSeparator />
-													<DropdownMenuItem className='text-destructive'>
+													<DropdownMenuItem
+														onClick={() => handleDelete(course.id)}
+														className='text-destructive'
+													>
 														Delete Course
 													</DropdownMenuItem>
 												</DropdownMenuContent>
@@ -233,10 +279,7 @@ export default function InstructorCoursesPage() {
 					</CardHeader>
 					<CardContent>
 						<div className='text-2xl font-bold'>
-							{instructorCourses.reduce(
-								(acc, course) => acc + course.students,
-								0
-							)}
+							{instructorCourses?.reduce((acc, course) => acc + 230, 0)}
 						</div>
 						<p className='text-xs text-muted-foreground'>
 							+12% from last month

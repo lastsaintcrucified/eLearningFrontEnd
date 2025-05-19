@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
 import Link from "next/link";
 import { CheckCircle, Clock, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,170 +16,206 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Icons } from "@/components/icons";
 import Image from "next/image";
+import { useDataContext } from "@/context/dataContext";
+import { use, useEffect, useState } from "react";
+import {
+	Course,
+	getCourseById,
+	getModulesByCourseId,
+	Module,
+} from "@/lib/data/data";
+import { set } from "date-fns";
+import { useAuth } from "@/context/authContext";
 
 // Mock course data
-const course = {
-	id: 1,
-	title: "Advanced JavaScript",
-	instructor: "Jane Smith",
-	description:
-		"Master advanced JavaScript concepts including closures, prototypes, async programming, and more.",
-	progress: 45,
-	totalLessons: 24,
-	completedLessons: 11,
-	image: "/placeholder.svg?height=200&width=600",
-	lastAccessed: "2 days ago",
-	modules: [
-		{
-			id: 1,
-			title: "JavaScript Fundamentals Review",
-			lessons: [
-				{
-					id: 1,
-					title: "Variables and Data Types",
-					duration: "15 min",
-					completed: true,
-				},
-				{
-					id: 2,
-					title: "Functions and Scope",
-					duration: "20 min",
-					completed: true,
-				},
-				{
-					id: 3,
-					title: "Objects and Arrays",
-					duration: "25 min",
-					completed: true,
-				},
-			],
-		},
-		{
-			id: 2,
-			title: "Advanced Concepts",
-			lessons: [
-				{ id: 4, title: "Closures", duration: "30 min", completed: true },
-				{
-					id: 5,
-					title: "Prototypes and Inheritance",
-					duration: "35 min",
-					completed: true,
-				},
-				{ id: 6, title: "This Keyword", duration: "25 min", completed: true },
-				{
-					id: 7,
-					title: "Call, Apply, and Bind",
-					duration: "20 min",
-					completed: true,
-				},
-			],
-		},
-		{
-			id: 3,
-			title: "Asynchronous JavaScript",
-			lessons: [
-				{ id: 8, title: "Callbacks", duration: "20 min", completed: true },
-				{ id: 9, title: "Promises", duration: "30 min", completed: true },
-				{ id: 10, title: "Async/Await", duration: "35 min", completed: true },
-				{ id: 11, title: "Event Loop", duration: "25 min", completed: true },
-				{
-					id: 12,
-					title: "Practical Examples",
-					duration: "40 min",
-					completed: false,
-				},
-			],
-		},
-		{
-			id: 4,
-			title: "Modern JavaScript",
-			lessons: [
-				{
-					id: 13,
-					title: "ES6+ Features",
-					duration: "30 min",
-					completed: false,
-				},
-				{ id: 14, title: "Modules", duration: "25 min", completed: false },
-				{
-					id: 15,
-					title: "Destructuring",
-					duration: "20 min",
-					completed: false,
-				},
-				{
-					id: 16,
-					title: "Spread and Rest Operators",
-					duration: "15 min",
-					completed: false,
-				},
-			],
-		},
-		{
-			id: 5,
-			title: "JavaScript Design Patterns",
-			lessons: [
-				{
-					id: 17,
-					title: "Module Pattern",
-					duration: "25 min",
-					completed: false,
-				},
-				{
-					id: 18,
-					title: "Singleton Pattern",
-					duration: "20 min",
-					completed: false,
-				},
-				{
-					id: 19,
-					title: "Factory Pattern",
-					duration: "25 min",
-					completed: false,
-				},
-				{
-					id: 20,
-					title: "Observer Pattern",
-					duration: "30 min",
-					completed: false,
-				},
-			],
-		},
-		{
-			id: 6,
-			title: "JavaScript Performance",
-			lessons: [
-				{
-					id: 21,
-					title: "Memory Management",
-					duration: "25 min",
-					completed: false,
-				},
-				{
-					id: 22,
-					title: "Optimization Techniques",
-					duration: "30 min",
-					completed: false,
-				},
-				{ id: 23, title: "Debugging", duration: "25 min", completed: false },
-				{
-					id: 24,
-					title: "Performance Testing",
-					duration: "35 min",
-					completed: false,
-				},
-			],
-		},
-	],
-};
+// const course = {
+// 	id: 1,
+// 	title: "Advanced JavaScript",
+// 	instructor: "Jane Smith",
+// 	description:
+// 		"Master advanced JavaScript concepts including closures, prototypes, async programming, and more.",
+// 	progress: 45,
+// 	totalLessons: 24,
+// 	completedLessons: 11,
+// 	image: "/placeholder.svg?height=200&width=600",
+// 	lastAccessed: "2 days ago",
+// 	modules: [
+// 		{
+// 			id: 1,
+// 			title: "JavaScript Fundamentals Review",
+// 			lessons: [
+// 				{
+// 					id: 1,
+// 					title: "Variables and Data Types",
+// 					duration: "15 min",
+// 					completed: true,
+// 				},
+// 				{
+// 					id: 2,
+// 					title: "Functions and Scope",
+// 					duration: "20 min",
+// 					completed: true,
+// 				},
+// 				{
+// 					id: 3,
+// 					title: "Objects and Arrays",
+// 					duration: "25 min",
+// 					completed: true,
+// 				},
+// 			],
+// 		},
+// 		{
+// 			id: 2,
+// 			title: "Advanced Concepts",
+// 			lessons: [
+// 				{ id: 4, title: "Closures", duration: "30 min", completed: true },
+// 				{
+// 					id: 5,
+// 					title: "Prototypes and Inheritance",
+// 					duration: "35 min",
+// 					completed: true,
+// 				},
+// 				{ id: 6, title: "This Keyword", duration: "25 min", completed: true },
+// 				{
+// 					id: 7,
+// 					title: "Call, Apply, and Bind",
+// 					duration: "20 min",
+// 					completed: true,
+// 				},
+// 			],
+// 		},
+// 		{
+// 			id: 3,
+// 			title: "Asynchronous JavaScript",
+// 			lessons: [
+// 				{ id: 8, title: "Callbacks", duration: "20 min", completed: true },
+// 				{ id: 9, title: "Promises", duration: "30 min", completed: true },
+// 				{ id: 10, title: "Async/Await", duration: "35 min", completed: true },
+// 				{ id: 11, title: "Event Loop", duration: "25 min", completed: true },
+// 				{
+// 					id: 12,
+// 					title: "Practical Examples",
+// 					duration: "40 min",
+// 					completed: false,
+// 				},
+// 			],
+// 		},
+// 		{
+// 			id: 4,
+// 			title: "Modern JavaScript",
+// 			lessons: [
+// 				{
+// 					id: 13,
+// 					title: "ES6+ Features",
+// 					duration: "30 min",
+// 					completed: false,
+// 				},
+// 				{ id: 14, title: "Modules", duration: "25 min", completed: false },
+// 				{
+// 					id: 15,
+// 					title: "Destructuring",
+// 					duration: "20 min",
+// 					completed: false,
+// 				},
+// 				{
+// 					id: 16,
+// 					title: "Spread and Rest Operators",
+// 					duration: "15 min",
+// 					completed: false,
+// 				},
+// 			],
+// 		},
+// 		{
+// 			id: 5,
+// 			title: "JavaScript Design Patterns",
+// 			lessons: [
+// 				{
+// 					id: 17,
+// 					title: "Module Pattern",
+// 					duration: "25 min",
+// 					completed: false,
+// 				},
+// 				{
+// 					id: 18,
+// 					title: "Singleton Pattern",
+// 					duration: "20 min",
+// 					completed: false,
+// 				},
+// 				{
+// 					id: 19,
+// 					title: "Factory Pattern",
+// 					duration: "25 min",
+// 					completed: false,
+// 				},
+// 				{
+// 					id: 20,
+// 					title: "Observer Pattern",
+// 					duration: "30 min",
+// 					completed: false,
+// 				},
+// 			],
+// 		},
+// 		{
+// 			id: 6,
+// 			title: "JavaScript Performance",
+// 			lessons: [
+// 				{
+// 					id: 21,
+// 					title: "Memory Management",
+// 					duration: "25 min",
+// 					completed: false,
+// 				},
+// 				{
+// 					id: 22,
+// 					title: "Optimization Techniques",
+// 					duration: "30 min",
+// 					completed: false,
+// 				},
+// 				{ id: 23, title: "Debugging", duration: "25 min", completed: false },
+// 				{
+// 					id: 24,
+// 					title: "Performance Testing",
+// 					duration: "35 min",
+// 					completed: false,
+// 				},
+// 			],
+// 		},
+// 	],
+// };
 
-export default function CoursePage({ params }: { params: { id: string } }) {
-	const courseId = Number.parseInt(params.id);
+export default function CoursePage({
+	params,
+}: {
+	params: Promise<{ id: string }>;
+}) {
+	const { id } = use(params);
+	const { user } = useAuth();
+	const [course, setCourse] = useState<Course | undefined>();
+	const [modules, setModules] = useState<Module[] | undefined>([]);
+
+	useEffect(() => {
+		async function fetchCourse() {
+			const data = await getCourseById(id);
+			setCourse(data);
+		}
+		async function fetchModules() {
+			if (user?.role) {
+				const data = await getModulesByCourseId(id, user.role);
+				setModules(data);
+			}
+		}
+		fetchModules();
+		fetchCourse();
+	}, [id]);
+
+	if (!course) {
+		return <div>Loading...</div>;
+	}
 
 	// Calculate next lesson
-	const nextLesson = course.modules
-		.flatMap((module) => module.lessons)
-		.find((lesson) => !lesson.completed);
+	// const nextLesson = course.modules
+	// 	.flatMap((module) => module.lessons)
+	// 	.find((lesson) => !lesson.completed);
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -194,10 +232,10 @@ export default function CoursePage({ params }: { params: { id: string } }) {
 							{course.title}
 						</h1>
 						<p className='text-muted-foreground'>
-							Instructor: {course.instructor}
+							Instructor: {course.instructor.name}
 						</p>
 					</div>
-					{nextLesson && (
+					{modules && (
 						<Button
 							className='md:w-auto w-full'
 							size='lg'
@@ -214,11 +252,11 @@ export default function CoursePage({ params }: { params: { id: string } }) {
 					<Card>
 						<div className='aspect-video w-full overflow-hidden'>
 							<Image
-								src={course.image || "/placeholder.svg"}
+								src={"/placeholder.png"}
 								alt={course.title}
 								className='h-full w-full object-cover'
-								height={100}
-								width={250}
+								width={600}
+								height={205}
 							/>
 						</div>
 						<CardHeader>
@@ -230,20 +268,17 @@ export default function CoursePage({ params }: { params: { id: string } }) {
 								<div className='space-y-2'>
 									<div className='flex items-center justify-between text-sm'>
 										<span>Progress</span>
-										<span>{course.progress}%</span>
+										<span>80%</span>
 									</div>
 									<div className='h-2 w-full rounded-full bg-secondary'>
 										<div
 											className='h-full rounded-full bg-primary'
-											style={{ width: `${course.progress}%` }}
+											style={{ width: `80%` }}
 										></div>
 									</div>
 									<div className='flex justify-between text-sm text-muted-foreground'>
-										<span>
-											{course.completedLessons} / {course.totalLessons} lessons
-											completed
-										</span>
-										<span>Last accessed: {course.lastAccessed}</span>
+										<span>10 / 16 lessons completed</span>
+										<span>Last accessed: yesterday</span>
 									</div>
 								</div>
 							</div>
@@ -264,14 +299,14 @@ export default function CoursePage({ params }: { params: { id: string } }) {
 							className='space-y-4'
 						>
 							<div className='space-y-4'>
-								{course.modules.map((module, index) => (
+								{modules?.map((module, index) => (
 									<Card key={module.id}>
 										<CardHeader className='py-3'>
 											<CardTitle className='text-lg'>
 												Module {index + 1}: {module.title}
 											</CardTitle>
 										</CardHeader>
-										<CardContent className='py-0'>
+										{/* <CardContent className='py-0'>
 											<div className='space-y-2'>
 												{module.lessons.map((lesson) => (
 													<div
@@ -299,7 +334,7 @@ export default function CoursePage({ params }: { params: { id: string } }) {
 													</div>
 												))}
 											</div>
-										</CardContent>
+										</CardContent> */}
 									</Card>
 								))}
 							</div>
@@ -381,16 +416,16 @@ export default function CoursePage({ params }: { params: { id: string } }) {
 							<CardDescription>Pick up where you left off</CardDescription>
 						</CardHeader>
 						<CardContent>
-							{nextLesson ? (
+							{modules ? (
 								<div className='space-y-4'>
 									<div className='space-y-2'>
 										<h3 className='font-medium'>Next Lesson:</h3>
 										<div className='flex items-center gap-3 p-3 rounded-md bg-muted/50'>
 											<PlayCircle className='h-5 w-5 text-primary' />
 											<div className='flex-1'>
-												<p className='font-medium'>{nextLesson.title}</p>
+												<p className='font-medium'>Hooks</p>
 												<p className='text-sm text-muted-foreground'>
-													{nextLesson.duration}
+													Importance of hooks
 												</p>
 											</div>
 										</div>

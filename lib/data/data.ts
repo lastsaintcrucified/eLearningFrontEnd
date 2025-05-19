@@ -4,13 +4,18 @@ import { User } from "@/context/authContext";
 
 const API_URL = "http://localhost:3000/";
 
-type Role = "student" | "instructor";
+export type Role = "student" | "instructor";
 
 export interface Course {
 	id: string;
 	title: string;
 	description: string;
 	instructor: User;
+}
+
+export interface CourseCreate {
+	title: string;
+	description: string;
 }
 
 export interface Enrollment {
@@ -33,11 +38,16 @@ export interface Lesson {
 
 // Courses
 export async function createCourse(
-	course: Omit<Course, "id">
-): Promise<Course> {
-	const res = await axios.post(`${API_URL}courses`, course, {
-		headers: { "Content-Type": "application/json" },
-	});
+	title: string,
+	description: string
+): Promise<CourseCreate | undefined> {
+	const res = await axios.post(
+		`${API_URL}courses`,
+		{ title, description },
+		{
+			headers: { "Content-Type": "application/json" },
+		}
+	);
 	if (res.status !== 201) {
 		throw new Error("Failed to create course");
 	}
@@ -53,27 +63,39 @@ export async function getCourses(): Promise<Course[]> {
 }
 
 export async function getCourseById(id: string): Promise<Course | undefined> {
-	const res = await fetch(`${API_URL}courses/${id}`);
-	if (!res.ok) return undefined;
-	return res.json();
+	const res = await axios.get(`${API_URL}courses/${id}`);
+	// console.log(res);
+	if (res.status !== 200) {
+		throw new Error("Failed to fetch course");
+	}
+	return res.data;
 }
 
 export async function updateCourse(
 	id: string,
-	data: Partial<Omit<Course, "id">>
-): Promise<Course | undefined> {
-	const res = await fetch(`${API_URL}courses/${id}`, {
-		method: "PATCH",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(data),
-	});
-	if (!res.ok) return undefined;
-	return res.json();
+	title: string | undefined,
+	description: string | undefined
+): Promise<CourseCreate | undefined> {
+	const res = await axios.patch(
+		`${API_URL}courses/${id}`,
+		{ title, description },
+		{
+			headers: { "Content-Type": "application/json" },
+		}
+	);
+	if (res.status !== 200) {
+		throw new Error("Failed to update course");
+	}
+	return res.data;
 }
 
 export async function deleteCourse(id: string): Promise<boolean> {
-	const res = await fetch(`${API_URL}courses/${id}`, { method: "DELETE" });
-	return res.ok;
+	const res = await axios.delete(`${API_URL}courses/${id}`);
+	if (res.status !== 200) {
+		throw new Error("Failed to delete course");
+	}
+
+	return res.status === 200;
 }
 
 // Enrollment for student role
@@ -83,13 +105,17 @@ export async function enrollStudent(
 	role: Role
 ): Promise<Enrollment | undefined> {
 	if (role !== "student") return undefined;
-	const res = await fetch(`${API_URL}enrollments`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ courseId, studentId }),
-	});
-	if (!res.ok) return undefined;
-	return res.json();
+	const res = await axios.post(
+		`${API_URL}enrollments`,
+		{ courseId, studentId },
+		{
+			headers: { "Content-Type": "application/json" },
+		}
+	);
+	if (res.status !== 201) {
+		throw new Error("Failed to enroll student");
+	}
+	return res.data;
 }
 
 export async function getEnrollmentsByStudent(
@@ -97,8 +123,13 @@ export async function getEnrollmentsByStudent(
 	role: Role
 ): Promise<Enrollment[]> {
 	if (role !== "student") return [];
-	const res = await fetch(`${API_URL}enrollments?studentId=${studentId}`);
-	return res.json();
+	const res = await axios.get(`${API_URL}enrollments?studentId=${studentId}`, {
+		headers: { "Content-Type": "application/json" },
+	});
+	if (res.status !== 200) {
+		throw new Error("Failed to fetch enrollments");
+	}
+	return res.data;
 }
 
 // Modules for specific course (instructor role)
@@ -107,8 +138,14 @@ export async function getModulesByCourseId(
 	role: Role
 ): Promise<Module[]> {
 	if (role !== "instructor") return [];
-	const res = await fetch(`${API_URL}modules?courseId=${courseId}`);
-	return res.json();
+	const res = await axios.get(`${API_URL}courses/${courseId}/modules`, {
+		headers: { "Content-Type": "application/json" },
+	});
+	console.log(res, "dfgf");
+	if (res.status !== 200) {
+		throw new Error("Failed to fetch modules");
+	}
+	return res.data;
 }
 
 export async function createModule(
@@ -117,13 +154,18 @@ export async function createModule(
 	role: Role
 ): Promise<Module | undefined> {
 	if (role !== "instructor") return undefined;
-	const res = await fetch(`${API_URL}modules`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ courseId, title }),
-	});
-	if (!res.ok) return undefined;
-	return res.json();
+	const res = await axios.post(
+		`${API_URL}modules`,
+		{ courseId, title },
+		{
+			headers: { "Content-Type": "application/json" },
+		}
+	);
+	if (res.status !== 201) {
+		throw new Error("Failed to create module");
+	}
+
+	return res.data;
 }
 
 // Lessons for specific module (instructor role)
@@ -132,8 +174,13 @@ export async function getLessonsByModuleId(
 	role: Role
 ): Promise<Lesson[]> {
 	if (role !== "instructor") return [];
-	const res = await fetch(`${API_URL}lessons?moduleId=${moduleId}`);
-	return res.json();
+	const res = await axios.get(`${API_URL}lessons?moduleId=${moduleId}`, {
+		headers: { "Content-Type": "application/json" },
+	});
+	if (res.status !== 200) {
+		throw new Error("Failed to fetch lessons");
+	}
+	return res.data;
 }
 
 export async function createLesson(
@@ -142,13 +189,17 @@ export async function createLesson(
 	role: Role
 ): Promise<Lesson | undefined> {
 	if (role !== "instructor") return undefined;
-	const res = await fetch(`${API_URL}lessons`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ moduleId, title }),
-	});
-	if (!res.ok) return undefined;
-	return res.json();
+	const res = await axios.post(
+		`${API_URL}lessons`,
+		{ moduleId, title },
+		{
+			headers: { "Content-Type": "application/json" },
+		}
+	);
+	if (res.status !== 201) {
+		throw new Error("Failed to create lesson");
+	}
+	return res.data;
 }
 axios.interceptors.request.use((config) => {
 	const token = getToken();

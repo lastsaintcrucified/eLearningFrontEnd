@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,58 +36,65 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Icons } from "@/components/icons";
-import { createCourse } from "@/lib/data/data";
+import { Course, getCourseById, updateCourse } from "@/lib/data/data";
 import { useToast } from "@/components/ui/use-toast";
-
 const formSchema = z.object({
-	title: z.string().min(5, {
-		message: "Title must be at least 5 characters.",
-	}),
-	description: z.string().min(20, {
-		message: "Description must be at least 20 characters.",
-	}),
-	category: z.string({
-		required_error: "Please select a category.",
-	}),
-	level: z.string({
-		required_error: "Please select a difficulty level.",
-	}),
-	price: z.string().refine((val) => !isNaN(Number(val)), {
-		message: "Price must be a valid number.",
-	}),
+	title: z.string().optional(),
+	description: z.string().optional(),
+	category: z.string({}).optional(),
+	level: z.string({}).optional(),
+	price: z.string().optional(),
 });
 
-export default function CreateCoursePage() {
+export default function UpdateCoursePage({
+	params,
+}: {
+	params: Promise<{ id: string }>;
+}) {
+	const { id } = use(params);
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
 	const [activeTab, setActiveTab] = useState("basic");
 	const { toast } = useToast();
+	const [course, setCourse] = useState<Course | undefined>();
+
+	useEffect(() => {
+		async function fetchCourse() {
+			const data = await getCourseById(id);
+			setCourse(data);
+		}
+		fetchCourse();
+	}, [id]);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			title: "",
-			description: "",
+			title: course?.title || "",
+			description: course?.description || "",
 		},
 	});
+
+	if (!course) {
+		return <div>Loading...</div>;
+	}
 
 	async function onSubmit(values: z.infer<typeof formSchema>) {
 		setIsLoading(true);
 
 		try {
-			await createCourse(values.title, values.description);
+			await updateCourse(id, values.title, values.description);
 			setIsLoading(false);
 			toast({
-				title: "Creation Successful",
-				description: "Successfully created your course.",
+				title: "Update successful",
+				description: "Successfully updated your course.",
 				variant: "default",
 			});
 			router.push("/instructor/courses");
 		} catch (error: any) {
 			setIsLoading(false);
 			toast({
-				title: "Creation failed",
-				description: error.message || "Failed to create your course.",
+				title: "Update failed",
+				description: error.message || "Failed to update your course.",
 				variant: "destructive",
 			});
 		}
@@ -162,7 +168,7 @@ export default function CreateCoursePage() {
 											<FormLabel>Course Title</FormLabel>
 											<FormControl>
 												<Input
-													placeholder='e.g. Advanced JavaScript Masterclass'
+													placeholder={course.title}
 													{...field}
 												/>
 											</FormControl>
@@ -182,7 +188,7 @@ export default function CreateCoursePage() {
 											<FormLabel>Course Description</FormLabel>
 											<FormControl>
 												<Textarea
-													placeholder='Describe what students will learn in this course'
+													placeholder={course.description}
 													className='min-h-[120px]'
 													{...field}
 												/>
@@ -240,6 +246,7 @@ export default function CreateCoursePage() {
 									<FormField
 										control={form.control}
 										name='level'
+										// this field is not required for submission
 										render={({ field }) => (
 											<FormItem>
 												<FormLabel>Difficulty Level</FormLabel>
@@ -459,7 +466,7 @@ export default function CreateCoursePage() {
 									{isLoading && (
 										<Icons.spinner className='mr-2 h-4 w-4 animate-spin' />
 									)}
-									Create Course
+									Update Course
 								</Button>
 							</CardFooter>
 						</Card>

@@ -163,17 +163,19 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 												</Link>
 											</SidebarMenuButton>
 										</SidebarMenuItem>
-										<SidebarMenuItem>
-											<SidebarMenuButton
-												asChild
-												isActive={pathname === "/dashboard/enrollments"}
-											>
-												<Link href='/dashboard/enrollments'>
-													<Icons.fileText className='mr-2 h-4 w-4' />
-													<span>My Enrollments</span>
-												</Link>
-											</SidebarMenuButton>
-										</SidebarMenuItem>
+										{!isInstructor && (
+											<SidebarMenuItem>
+												<SidebarMenuButton
+													asChild
+													isActive={pathname === "/dashboard/enrollments"}
+												>
+													<Link href='/dashboard/enrollments'>
+														<Icons.fileText className='mr-2 h-4 w-4' />
+														<span>My Enrollments</span>
+													</Link>
+												</SidebarMenuButton>
+											</SidebarMenuItem>
+										)}
 										{isInstructor && (
 											<>
 												<SidebarMenuItem>

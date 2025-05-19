@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell, Loader, LogOut, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ import { useAuth, withAuth } from "@/context/authContext";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import Image from "next/image";
-import { useDataContext } from "@/context/dataContext";
+import { Course, getCourses } from "@/lib/data/data";
 
 // Mock data for courses
 // const allCourses = [
@@ -121,14 +121,32 @@ function CoursesPage() {
 	const { logout } = useAuth();
 	const router = useRouter();
 	const { toast } = useToast();
-	const { courses, loading } = useDataContext();
-	console.log("courses", courses);
+	const [courses, setCourses] = useState<Course[]>([]);
+	const [loading, setLoading] = useState(false);
+
+	// console.log("courses", courses);
+
+	useEffect(() => {
+		setLoading(true);
+		async function fetchCourses() {
+			try {
+				const data = await getCourses();
+				setCourses(data);
+				setLoading(false);
+			} catch (error) {
+				console.error("Error fetching courses:", error);
+			}
+		}
+		fetchCourses();
+	}, []);
 
 	const filteredCourses = courses?.length
 		? courses.filter(
 				(course) =>
 					course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					course.instructor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					course.instructor.name
+						.toLowerCase()
+						.includes(searchQuery.toLowerCase()) ||
 					course.description.toLowerCase().includes(searchQuery.toLowerCase())
 		  )
 		: [];
@@ -269,7 +287,7 @@ function CoursesPage() {
 									>
 										<div className='aspect-video w-full overflow-hidden'>
 											<Image
-												src={"/placeholder.svg"}
+												src={"/placeholder.png"}
 												alt={course.title}
 												className='h-full w-full object-cover'
 												width={250}
@@ -321,7 +339,9 @@ function CoursesPage() {
 												asChild
 												className='w-full'
 											>
-												<Link href={`/courses/${course.id}`}>View Course</Link>
+												<Link href={`/dashboard/course/${course.id}`}>
+													View Course
+												</Link>
 											</Button>
 										</CardFooter>
 									</Card>
