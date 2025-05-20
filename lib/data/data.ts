@@ -2,7 +2,7 @@ import axios from "axios";
 import { getToken } from "../auth";
 import { User } from "@/context/authContext";
 
-const API_URL = "http://localhost:3000/";
+const API_URL = `${process.env.NEXT_PUBLIC_BASE_URL}/`;
 
 export type Role = "student" | "instructor";
 

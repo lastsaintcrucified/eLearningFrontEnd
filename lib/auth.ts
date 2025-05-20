@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3000/auth"; // Adjust as needed
+const API_URL = `${process.env.NEXT_PUBLIC_BASE_URL}/auth`; // Adjust as needed
 
 // Signup function
 export async function signup(
