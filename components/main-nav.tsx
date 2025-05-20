@@ -14,8 +14,6 @@ import {
 } from "@/components/ui/navigation-menu";
 
 export function MainNav() {
-	const pathname = usePathname();
-
 	return (
 		<div className='mr-4 hidden md:flex'>
 			<Link

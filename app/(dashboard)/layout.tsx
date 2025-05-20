@@ -2,7 +2,6 @@
 "use client";
 
 import type React from "react";
-
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, LogOut } from "lucide-react";
@@ -41,8 +40,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 	const { logout } = useAuth();
 	const router = useRouter();
 	const { toast } = useToast();
-	// console.log("user", user ? user : null);
+
+	// Check if the user is an instructor
 	const isInstructor = user?.role === "instructor";
+
+	//Logout logic
 	const handleLogout = async () => {
 		try {
 			await logout();
@@ -65,13 +67,13 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 						<div className='md:hidden'>
 							<MobileNav />
 						</div>
-						<div className='flex items-center gap-2 md:hidden'>
+						<div className='flex items-center gap-2 '>
 							<Link
 								href='/dashboard'
 								className='flex items-center space-x-2'
 							>
 								<Icons.logo className='h-6 w-6' />
-								<span className='font-bold'>Dashboard</span>
+								<span className='font-bold'>Learnhub</span>
 							</Link>
 						</div>
 						<div className='flex flex-1 items-center justify-end space-x-4'>
@@ -238,7 +240,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 												</Link>
 											</SidebarMenuButton>
 										</SidebarMenuItem>
-										<SidebarMenuItem>
+										{/* <SidebarMenuItem>
 											<SidebarMenuButton
 												asChild
 												isActive={pathname === "/dashboard/settings"}
@@ -248,7 +250,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 													<span>Settings</span>
 												</Link>
 											</SidebarMenuButton>
-										</SidebarMenuItem>
+										</SidebarMenuItem> */}
 									</SidebarMenu>
 								</SidebarGroupContent>
 							</SidebarGroup>
