@@ -74,13 +74,23 @@ export default function CoursePage({
 							Instructor: {course?.instructor.name}
 						</p>
 					</div>
-					{user?.role === "student" && (
+					{user?.role === "student" ? (
 						<Button
 							className='md:w-auto w-full'
 							size='lg'
 						>
 							<PlayCircle className='mr-2 h-4 w-4' />
 							Continue Learning
+						</Button>
+					) : (
+						<Button
+							className='md:w-auto w-full'
+							size='lg'
+						>
+							<PlayCircle className='mr-2 h-4 w-4' />
+							<Link href={`/instructor/course/${id}/modules`}>
+								Go to Module
+							</Link>
 						</Button>
 					)}
 				</div>
