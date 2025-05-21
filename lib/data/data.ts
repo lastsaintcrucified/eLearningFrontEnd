@@ -11,6 +11,7 @@ export interface Course {
 	title: string;
 	description: string;
 	instructor: User;
+	modules: Module[];
 }
 
 export interface CourseCreate {
@@ -26,6 +27,13 @@ export interface Enrollment {
 
 export interface Module {
 	id: string;
+	description: string;
+	title: string;
+	lessons: Lesson[];
+}
+
+export interface CreateModule {
+	id: string;
 	courseId: string;
 	title: string;
 }
@@ -34,6 +42,17 @@ export interface Lesson {
 	id: string;
 	moduleId: string;
 	title: string;
+	completed: boolean;
+	duration: string;
+	content: string;
+}
+
+export interface CreateLesson {
+	moduleId: string;
+	title: string;
+	completed?: boolean;
+	content: string;
+	duration?: string;
 }
 
 // Courses
@@ -64,7 +83,6 @@ export async function getCourses(): Promise<Course[]> {
 
 export async function getCourseById(id: string): Promise<Course | undefined> {
 	const res = await axios.get(`${API_URL}courses/${id}`);
-	// console.log(res);
 	if (res.status !== 200) {
 		throw new Error("Failed to fetch course");
 	}
@@ -149,12 +167,13 @@ export async function getModulesByCourseId(
 export async function createModule(
 	courseId: string,
 	title: string,
-	role: Role
+	description: string | undefined,
+	role: Role | undefined
 ): Promise<Module | undefined> {
 	if (role !== "instructor") return undefined;
 	const res = await axios.post(
-		`${API_URL}modules`,
-		{ courseId, title },
+		`${API_URL}courses/${courseId}/modules`,
+		{ title, description },
 		{
 			headers: { "Content-Type": "application/json" },
 		}
@@ -166,12 +185,24 @@ export async function createModule(
 	return res.data;
 }
 
+export async function deleteModule(
+	courseId: string,
+	moduleId: string
+): Promise<boolean> {
+	const res = await axios.delete(
+		`${API_URL}courses/${courseId}/modules/${moduleId}`
+	);
+	if (res.status !== 200) {
+		throw new Error("Failed to delete course");
+	}
+
+	return res.status === 200;
+}
+
 // Lessons for specific module (instructor role)
 export async function getLessonsByModuleId(
-	moduleId: string,
-	role: Role
+	moduleId: string
 ): Promise<Lesson[]> {
-	if (role !== "instructor") return [];
 	const res = await axios.get(`${API_URL}lessons?moduleId=${moduleId}`, {
 		headers: { "Content-Type": "application/json" },
 	});
@@ -181,15 +212,31 @@ export async function getLessonsByModuleId(
 	return res.data;
 }
 
-export async function createLesson(
+export async function getLessonById(
 	moduleId: string,
-	title: string,
+	id: string,
 	role: Role
 ): Promise<Lesson | undefined> {
 	if (role !== "instructor") return undefined;
+	const res = await axios.get(`${API_URL}modules/${moduleId}/lessons/${id}`);
+	// console.log(res);
+	if (res.status !== 200) {
+		throw new Error("Failed to fetch course");
+	}
+	return res.data;
+}
+
+export async function createLesson(
+	moduleId: string,
+	title: string | undefined,
+	content: string | undefined,
+	completed: boolean | undefined,
+	role: Role | undefined
+): Promise<Lesson | undefined> {
+	if (role !== "instructor") return undefined;
 	const res = await axios.post(
-		`${API_URL}lessons`,
-		{ moduleId, title },
+		`${API_URL}modules/${moduleId}/lessons`,
+		{ title, content, completed },
 		{
 			headers: { "Content-Type": "application/json" },
 		}
@@ -199,6 +246,43 @@ export async function createLesson(
 	}
 	return res.data;
 }
+
+export async function updateLesson(
+	id: string,
+	moduleId: string,
+	title: string | undefined,
+	content: string | undefined,
+	completed: boolean | undefined,
+	role: Role | undefined
+): Promise<Lesson | undefined> {
+	if (role !== "instructor") return undefined;
+	const res = await axios.patch(
+		`${API_URL}modules/${moduleId}/lessons/${id}`,
+		{ title, content, completed },
+		{
+			headers: { "Content-Type": "application/json" },
+		}
+	);
+	if (res.status !== 200) {
+		throw new Error("Failed to create lesson");
+	}
+	return res.data;
+}
+
+export async function deleteLesson(
+	moduleId: string,
+	lessonId: string
+): Promise<boolean> {
+	const res = await axios.delete(
+		`${API_URL}modules/${moduleId}/lessons/${lessonId}`
+	);
+	if (res.status !== 200) {
+		throw new Error("Failed to delete course");
+	}
+
+	return res.status === 200;
+}
+
 axios.interceptors.request.use((config) => {
 	const token = getToken();
 	if (token) {

@@ -107,7 +107,7 @@ export default function EnrollmentsPage() {
 				<div className='grid gap-6 sm:grid-cols-2 lg:grid-cols-3'>
 					{enrolledCourses?.map((course) => (
 						<Card
-							key={course?.id}
+							key={course.id}
 							className='overflow-hidden'
 						>
 							<div className='aspect-video w-full overflow-hidden'>
@@ -122,7 +122,7 @@ export default function EnrollmentsPage() {
 							<CardHeader className='p-4'>
 								<div className='flex justify-between items-start'>
 									<CardTitle className='line-clamp-1'>
-										{course?.course.title}
+										{course.course.title}
 									</CardTitle>
 									{course?.course && (
 										<Badge
@@ -160,8 +160,8 @@ export default function EnrollmentsPage() {
 									asChild
 									className='w-full'
 								>
-									<Link href={`/dashboard/course/${course?.id}`}>
-										{course?.course ? "Review Course" : "Continue Learning"}
+									<Link href={`/dashboard/course/${course.course.id}`}>
+										{course.course ? "Review Course" : "Continue Learning"}
 									</Link>
 								</Button>
 							</CardFooter>

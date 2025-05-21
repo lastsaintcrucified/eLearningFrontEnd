@@ -197,16 +197,18 @@ export default function InstructorCoursesPage() {
 								filteredCourses?.map((course) => (
 									<TableRow key={course.id}>
 										<TableCell>
-											<div className='flex items-center gap-3'>
-												<Image
-													src={"/placeholder.png"}
-													alt={course.title}
-													className='h-10 w-16 rounded object-cover'
-													height={100}
-													width={250}
-												/>
-												<div className='font-medium'>{course.title}</div>
-											</div>
+											<Link href={`/dashboard/course/${course.id}`}>
+												<div className='flex items-center gap-3'>
+													<Image
+														src={"/placeholder.png"}
+														alt={course.title}
+														className='h-10 w-16 rounded object-cover'
+														height={100}
+														width={250}
+													/>
+													<div className='font-medium'>{course.title}</div>
+												</div>
+											</Link>
 										</TableCell>
 										<TableCell>
 											<Badge variant='outline'>Published</Badge>
