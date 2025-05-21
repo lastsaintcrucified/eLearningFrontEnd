@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import {
 	ChevronLeft,
 	ChevronRight,
 	Clock,
 	FileText,
+	Loader,
 	Video,
 } from "lucide-react";
 
@@ -23,170 +24,98 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Icons } from "@/components/icons";
-
-// Mock course data
-const course = {
-	id: 1,
-	title: "Advanced JavaScript",
-	moduleDatas: [
-		{
-			id: 1,
-			title: "JavaScript Fundamentals Review",
-			lessons: [
-				{
-					id: 1,
-					title: "Variables and Data Types",
-					description: "Learn about JavaScript variables and data types",
-					type: "video",
-					duration: "15:30",
-					videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-					content:
-						"JavaScript has the following data types:\n\n- String\n- Number\n- Boolean\n- Object\n- Null\n- Undefined\n- Symbol\n- BigInt",
-					completed: true,
-				},
-				{
-					id: 2,
-					title: "Functions and Scope",
-					description: "Understanding functions and variable scope",
-					type: "video",
-					duration: "20:45",
-					completed: true,
-				},
-				{
-					id: 3,
-					title: "Objects and Arrays",
-					description: "Working with objects and arrays",
-					type: "video",
-					duration: "25:10",
-					completed: true,
-				},
-			],
-		},
-		{
-			id: 2,
-			title: "Advanced Concepts",
-			lessons: [
-				{
-					id: 4,
-					title: "Closures",
-					description: "Understanding closures in JavaScript",
-					type: "video",
-					duration: "30:15",
-					completed: true,
-				},
-				{
-					id: 5,
-					title: "Prototypes and Inheritance",
-					description: "Learn about JavaScript's prototype-based inheritance",
-					type: "text",
-					content:
-						"JavaScript is a prototype-based language, which means that objects inherit directly from other objects. Every object in JavaScript has a prototype, from which it inherits properties and methods.\n\nWhen you access a property or method on an object, JavaScript first looks at the object itself. If it can't find the property or method there, it looks at the object's prototype. This chain of lookups continues until it either finds the property or reaches the end of the prototype chain.",
-					completed: true,
-				},
-				{
-					id: 6,
-					title: "This Keyword",
-					description: "Understanding the 'this' keyword in different contexts",
-					type: "video",
-					duration: "25:00",
-					completed: true,
-				},
-			],
-		},
-	],
-};
-
-// Helper function to find a lesson by ID
-function findLesson(
-	courseData: typeof course,
-	moduleDataId: number,
-	lessonId: number
-) {
-	const moduleData = courseData.moduleDatas.find((m) => m.id === moduleDataId);
-	if (!moduleData) return null;
-
-	const lesson = moduleData.lessons.find((l) => l.id === lessonId);
-	return lesson || null;
-}
-
-// Helper function to get next and previous lessons
-function getAdjacentLessons(
-	courseData: typeof course,
-	currentmoduleDataId: number,
-	currentLessonId: number
-) {
-	const allLessons: { moduleDataId: number; lesson: any }[] = [];
-	courseData.moduleDatas.forEach((moduleData) => {
-		moduleData.lessons.forEach((lesson) => {
-			allLessons.push({ moduleDataId: moduleData.id, lesson });
-		});
-	});
-
-	allLessons.sort((a, b) => {
-		if (a.moduleDataId !== b.moduleDataId)
-			return a.moduleDataId - b.moduleDataId;
-		return a.lesson.id - b.lesson.id;
-	});
-
-	const currentIndex = allLessons.findIndex(
-		(item) =>
-			item.moduleDataId === currentmoduleDataId &&
-			item.lesson.id === currentLessonId
-	);
-
-	const previous = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
-	const next =
-		currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
-
-	return { previous, next };
-}
+import { Course, getCourseById, Lesson, Module } from "@/lib/data/data";
+import { useAuth } from "@/context/authContext";
 
 export default function StudentLessonPage({
 	params,
 }: {
-	params: { id: string; moduleDataId: string; lessonId: string };
+	params: Promise<{ id: string; moduleId: string; lessonId: string }>;
 }) {
-	const courseId = Number.parseInt(params.id);
-	const moduleDataId = Number.parseInt(params.moduleDataId);
-	const lessonId = Number.parseInt(params.lessonId);
-
+	const { id: courseId, moduleId: moduleDataId, lessonId } = use(params);
 	const [isCompleted, setIsCompleted] = useState(false);
+	const { user } = useAuth();
+	const [loading, setLoading] = useState(false);
+	const [currentLesson, setCurrentLesson] = useState<Lesson | undefined>();
+	const [currentModuleData, setCurrentModuleData] = useState<
+		Module | undefined
+	>();
+	const [prevNxt, setPrevNxt] = useState<any>(undefined);
 
-	// Find the current lesson
-	const currentLesson = findLesson(course, moduleDataId, lessonId);
-	const currentmoduleData = course.moduleDatas.find(
-		(m) => m.id === moduleDataId
-	);
+	// Helper function to find a lesson by ID
+	function findLesson(
+		courseData: Course | undefined,
+		moduleDataId: number,
+		lessonId: number
+	) {
+		console.log(moduleDataId, lessonId);
+		const moduleData = courseData?.modules.find((m) => +m.id === moduleDataId);
+		console.log(moduleData, " moduleData");
+		if (!moduleData) return undefined;
 
-	// Get next and previous lessons
-	const { previous, next } = getAdjacentLessons(course, moduleDataId, lessonId);
+		const lesson = moduleData.lessons.find((l) => +l.id === lessonId);
+		return lesson || undefined;
+	}
+
+	// Helper function to get next and previous lessons
+	function getAdjacentLessons(
+		courseData: Course | undefined,
+		currentmoduleDataId: number,
+		currentLessonId: number
+	) {
+		const allLessons: { moduleDataId: string; lesson: any }[] = [];
+		courseData?.modules.forEach((moduleData) => {
+			moduleData.lessons.forEach((lesson) => {
+				allLessons.push({ moduleDataId: moduleData.id, lesson });
+			});
+		});
+
+		allLessons.sort((a, b) => {
+			if (+a.moduleDataId !== +b.moduleDataId)
+				return +a.moduleDataId - +b.moduleDataId;
+			return +a.lesson.id - +b.lesson.id;
+		});
+
+		const currentIndex = allLessons.findIndex(
+			(item) =>
+				+item.moduleDataId === currentmoduleDataId &&
+				item.lesson.id === currentLessonId
+		);
+
+		const previous = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
+		const next =
+			currentIndex < allLessons.length - 1
+				? allLessons[currentIndex + 1]
+				: null;
+
+		return { previous, next };
+	}
+
+	useEffect(() => {
+		setLoading(true);
+		async function fetchCourse() {
+			const data = await getCourseById(courseId);
+			console.log("data", data);
+			if (data) {
+				const tempLesson = findLesson(data, +moduleDataId, +lessonId);
+				console.log("tempLesson", tempLesson);
+				setCurrentLesson(tempLesson);
+				setCurrentModuleData(data.modules.find((m) => m.id === moduleDataId));
+				const prevNxt = getAdjacentLessons(data, +moduleDataId, +lessonId);
+				// console.log(prevNxt);
+				setPrevNxt(prevNxt);
+			} else {
+				console.error("Course not found");
+			}
+			setLoading(false);
+		}
+		fetchCourse();
+	}, [courseId, user?.role]);
 
 	// Mark lesson as completed
 	function markAsCompleted() {
 		setIsCompleted(true);
 		// In a real app, this would send an API request to update the completed status
-	}
-
-	if (!currentLesson || !currentmoduleData) {
-		return (
-			<div className='flex flex-col gap-6'>
-				<div className='flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
-					<div>
-						<h1 className='text-3xl font-bold tracking-tight'>
-							Lesson Not Found
-						</h1>
-						<p className='text-muted-foreground'>
-							The requested lesson could not be found.
-						</p>
-					</div>
-					<Button asChild>
-						<Link href={`/dashboard/course/${courseId}/modules`}>
-							Back to moduleDatas
-						</Link>
-					</Button>
-				</div>
-			</div>
-		);
 	}
 
 	// Helper function to get lesson type icon
@@ -202,6 +131,13 @@ export default function StudentLessonPage({
 				return <FileText className='h-4 w-4' />;
 		}
 	}
+	if (loading) {
+		return (
+			<div className='flex flex-col gap-6'>
+				<Loader className='h-8 w-8 animate-spin' />
+			</div>
+		);
+	}
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -212,21 +148,21 @@ export default function StudentLessonPage({
 							href={`/dashboard/course/${courseId}/modules`}
 							className='hover:underline'
 						>
-							moduleDatas
+							Modules
 						</Link>
 						<ChevronRight className='h-4 w-4' />
 						<Link
 							href={`/dashboard/course/${courseId}/modules`}
 							className='hover:underline'
 						>
-							{currentmoduleData.title}
+							{currentModuleData?.title}
 						</Link>
 					</div>
 					<h1 className='text-3xl font-bold tracking-tight'>
-						{currentLesson.title}
+						{currentLesson?.title}
 					</h1>
-					{currentLesson.description && (
-						<p className='text-muted-foreground'>{currentLesson.description}</p>
+					{currentLesson?.content && (
+						<p className='text-muted-foreground'>{currentLesson.content}</p>
 					)}
 				</div>
 				<div className='flex items-center gap-2'>
@@ -235,10 +171,10 @@ export default function StudentLessonPage({
 						asChild
 					>
 						<Link href={`/dashboard/course/${courseId}/modules`}>
-							Back to moduleDatas
+							Back to modules
 						</Link>
 					</Button>
-					{!currentLesson.completed && !isCompleted && (
+					{!currentLesson?.completed && !isCompleted && (
 						<Button onClick={markAsCompleted}>
 							<Icons.check className='mr-2 h-4 w-4' />
 							Mark as Completed
@@ -254,17 +190,17 @@ export default function StudentLessonPage({
 						variant='outline'
 						className='flex gap-1.5 items-center'
 					>
-						{getLessonTypeIcon(currentLesson.type)}
-						<span className='capitalize'>{currentLesson.type}</span>
+						{getLessonTypeIcon("text")}
+						<span className='capitalize'>Text</span>
 					</Badge>
 				</div>
-				{currentLesson.duration && (
+				{currentLesson?.duration && (
 					<div className='flex items-center gap-1.5 text-muted-foreground text-sm'>
 						<Clock className='h-4 w-4' />
-						<span>{currentLesson.duration}</span>
+						<span>{currentLesson?.duration}</span>
 					</div>
 				)}
-				{(currentLesson.completed || isCompleted) && (
+				{(currentLesson?.completed || isCompleted) && (
 					<Badge className='bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'>
 						Completed
 					</Badge>
@@ -288,25 +224,10 @@ export default function StudentLessonPage({
 				>
 					<Card>
 						<CardContent className='pt-6'>
-							{currentLesson.type === "video" ? (
-								<div className='aspect-video w-full overflow-hidden rounded-md mb-6'>
-									<iframe
-										width='100%'
-										height='100%'
-										src={"dfgfdgfdg"}
-										title={currentLesson.title}
-										frameBorder='0'
-										allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
-										allowFullScreen
-										className='aspect-video'
-									></iframe>
-								</div>
-							) : null}
-
 							<div className='prose max-w-none dark:prose-invert'>
-								{currentLesson.content ? (
+								{currentLesson?.content ? (
 									<div className='whitespace-pre-line'>
-										{currentLesson.content}
+										{currentLesson?.content}
 									</div>
 								) : (
 									<p className='text-muted-foreground'>
@@ -317,13 +238,13 @@ export default function StudentLessonPage({
 						</CardContent>
 						<CardFooter className='flex justify-between border-t pt-6'>
 							<div>
-								{previous && (
+								{prevNxt?.previous && (
 									<Button
 										variant='outline'
 										asChild
 									>
 										<Link
-											href={`/dashboard/course/${courseId}/modules/${previous.moduleDataId}/lessons/${previous.lesson.id}`}
+											href={`/dashboard/course/${courseId}/modules/${prevNxt?.previous.moduleDataId}/lessons/${prevNxt?.previous.lesson.id}`}
 										>
 											<ChevronLeft className='mr-2 h-4 w-4' />
 											Previous Lesson
@@ -332,16 +253,16 @@ export default function StudentLessonPage({
 								)}
 							</div>
 							<div className='flex items-center gap-2'>
-								{!currentLesson.completed && !isCompleted && (
+								{!currentLesson?.completed && !isCompleted && (
 									<Button onClick={markAsCompleted}>
 										<Icons.check className='mr-2 h-4 w-4' />
 										Mark as Completed
 									</Button>
 								)}
-								{next && (
+								{prevNxt?.next && (
 									<Button asChild>
 										<Link
-											href={`/dashboard/course/${courseId}/modules/${next.moduleDataId}/lessons/${next.lesson.id}`}
+											href={`/dashboard/course/${courseId}/modules/${prevNxt?.next.moduleDataId}/lessons/${prevNxt?.next.lesson.id}`}
 										>
 											Next Lesson
 											<ChevronRight className='ml-2 h-4 w-4' />

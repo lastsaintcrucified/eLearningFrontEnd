@@ -194,29 +194,6 @@ export default function LessonPage({
 		}
 	}
 
-	if (loading) {
-		return (
-			<div className='flex flex-col gap-6'>
-				{/* <div className='flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
-					<div>
-						<h1 className='text-3xl font-bold tracking-tight'>
-							Lesson Not Found
-						</h1>
-						<p className='text-muted-foreground'>
-							The requested lesson could not be found.
-						</p>
-					</div>
-					<Button asChild>
-						<Link href={`/instructor/course/${courseId}/modules`}>
-							Back to modules
-						</Link>
-					</Button>
-				</div> */}
-				<Loader className='h-8 w-8 animate-spin' />
-			</div>
-		);
-	}
-
 	// Helper function to get lesson type icon
 	function getLessonTypeIcon(type: string) {
 		switch (type) {
@@ -229,6 +206,14 @@ export default function LessonPage({
 			default:
 				return <FileText className='h-4 w-4' />;
 		}
+	}
+
+	if (loading) {
+		return (
+			<div className='flex flex-col gap-6'>
+				<Loader className='h-8 w-8 animate-spin' />
+			</div>
+		);
 	}
 
 	return (

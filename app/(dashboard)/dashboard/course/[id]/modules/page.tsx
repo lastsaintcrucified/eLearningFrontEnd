@@ -39,8 +39,6 @@ export default function StudentmoduleDatasPage({
 			setCourse(data);
 		}
 		fetchCourse();
-
-		fetchCourse();
 	}, [courseId, user?.role]);
 	// Function to find the next incomplete lesson
 	const findNextLesson = () => {
